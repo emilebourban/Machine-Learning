@@ -52,7 +52,6 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
         
 def least_squares(y, tx):
     """calculate the least squares solution."""
-    
     a = tx.T.dot(tx)
     b = tx.T.dot(y)
     w = np.linalg.solve(a, b)
