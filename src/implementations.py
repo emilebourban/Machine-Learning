@@ -87,3 +87,91 @@ def build_poly(x, degree):
 #	
 #	
 #    return (w, loss)
+
+
+
+
+
+
+def build_k_indices(y, k_fold, seed):
+    """build k indices for k-fold."""
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval]
+                 for k in range(k_fold)]
+    return np.array(k_indices)
+
+
+from costs import compute_mse
+from ridge_regression import ridge_regression
+from build_polynomial import build_poly
+
+
+def cross_validation(y, x, k_indices, k, lambda_, degree):
+    """return the loss of ridge regression."""
+    # ***************************************************
+    copy_k_indices = list(k_indices.copy())
+    test_indices = copy_k_indices[k]
+    test_y = [y[v] for v in test_indices]
+    test_x = [x[v] for v in test_indices]
+    del copy_k_indices[k]
+    train_indices = [v for t in copy_k_indices for v in t] 
+    train_y = [y[v] for v in train_indices]
+    train_x = [x[v] for v in train_indices]
+
+    # ***************************************************
+    # ***************************************************
+    train_poly = build_poly(train_x,degree)
+    test_poly = build_poly(test_x, degree)
+    # ***************************************************
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    weights = ridge_regression(train_y,train_poly,lambda_)
+    # ***************************************************
+    # ***************************************************
+    loss_tr = compute_mse(train_y, train_poly, weights)
+    loss_te = compute_mse(test_y, test_poly, weights)
+# ***************************************************
+    #raise NotImplementedError
+    return loss_tr, loss_te
+
+
+
+from plots import cross_validation_visualization# 
+
+def cross_validation_demo(y,x):
+    seed = 1
+    degree = 7
+    k_fold = 4
+    lambdas = np.logspace(-4, 0, 30)
+    # split data in k fold
+    k_indices = build_k_indices(y, k_fold, seed)
+    # define lists to store the loss of training data and test data
+    rmse_tr = []
+    rmse_te = []
+    # ***************************************************
+    print(lambdas)
+    for l in lambdas :
+        rmse_tr_0 = 0
+        rmse_te_0 = 0
+        for k in range(k_fold):
+            o,p = cross_validation(y, x, k_indices,k,l, degree )
+            rmse_tr_0 += o
+            rmse_te_0 += p 
+        rmse_tr.append(rmse_tr_0/4)
+        rmse_te.append(rmse_te_0/4)
+    # ***************************************************  
+    print(len(x))
+    cross_validation_visualization(lambdas, rmse_tr, rmse_te)
+
+
+
+
+
+
+
+
+
+
