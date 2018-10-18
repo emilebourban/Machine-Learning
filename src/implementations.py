@@ -9,11 +9,13 @@ def calculate_mae(e):
     return np.mean(np.abs(e))
     
 
-def compute_loss(y, tx, w, error='square'):
+def compute_loss(y, tx, w, error='square', rmse=False):
     '''  Computes loss function, type=square/absolute'''
     e = y - (tx @ w)
     if type == 'absolute':
         return calculate_mae(e)
+    elif rmse:
+        return np.sqrt(2 * calculate_mse(e))
     else:
         return calculate_mse(e)
     
@@ -59,10 +61,17 @@ def least_squares(y, tx):
     loss = compute_loss(y, tx, w)
     return w, loss
     
-#def ridge_regression(y, tx, lambda_):
-#	'''Ridge regression using normal equations'''
-#    return (w, loss)
-#    
+def ridge_regression(y, tx, lambda_):
+	'''Ridge regression using normal equations'''
+    A = tx.T.dot(tx) - lambda_/(2*len(y))*np.identity(len(y))
+    B = tx.T.dot(y) 
+    w = np.linalg.solve(A, B)   
+    loss = compute_loss(y, tx, w, rmse=True)
+    
+    return (w, loss)
+
+
+
 #def logistic_regression(y, ty, initial_w, max_iters, gamma):
 #	'''Logistic regression using gradient descent or SGD'''
 #    return (w, loss)
