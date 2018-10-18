@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 """some helper functions for project 1."""
 import csv
 import numpy as np
@@ -46,3 +46,36 @@ def create_csv_submission(ids, y_pred, name):
         writer.writeheader()
         for r1, r2 in zip(ids, y_pred):
             writer.writerow({'Id':int(r1),'Prediction':int(r2)})
+
+def split_data(y, tx, k_fold):
+    ''' Returns the data split into the parts for cross validation '''
+    ind = build_k_indices(tx, k_fold)
+    y_tr = []; y_te = []; tx_tr = []; tx_te = [];
+    print(ind[1, :])
+    for i in range(k_fold):
+        y_tr.append(y[ind[i, :]])
+        y_te.append(y[np.ravel(np.delete(ind, i, axis=0))])
+        tx_tr.append(tx[ind[i, :]])
+        tx_te.append(tx[np.ravel(np.delete(ind, i, axis=0))]) 
+        
+    return np.array(y_tr), np.array(y_te), np.array(tx_tr), np.array(tx_te)
+
+def build_k_indices(y, k_fold, seed=1):
+    """build k indices for k-fold."""
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval]
+                 for k in range(k_fold)]
+    return np.array(k_indices)
+
+
+
+
+
+
+
+
+
+
