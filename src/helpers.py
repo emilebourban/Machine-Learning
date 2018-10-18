@@ -13,6 +13,14 @@ def load_data(path_dataset):
                          usecols=range(2, 32), skip_header=1)
     return y, data, cols
 
+def clean_data(data, err_list, err_lim):
+    '''  '''
+    for i in range(data.shape[1]):
+    if (err_list[i]) > err_lim:
+        data = np.delete(data, [i-n_del],  axis=1)
+        data_te = np.delete(data_te, [i-n_del],  axis=1)
+        n_del +=1
+    return data
 
 def standardize(x):
     """Standardize the original data set."""
