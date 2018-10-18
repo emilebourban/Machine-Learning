@@ -7,7 +7,10 @@ def calculate_mse(e):
 def calculate_mae(e):
     ''' Calculates the Mean Absolute Error '''
     return np.mean(np.abs(e))
-    
+
+def calculate_rmse(mse):
+    '''Calculate root mean square error from mean square error''' 
+    return np.sqrt(2 * mse)    
 
 def compute_loss(y, tx, w, error='square', rmse=False):
     '''  Computes loss function, type=square/absolute'''
