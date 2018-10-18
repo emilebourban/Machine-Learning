@@ -70,7 +70,12 @@ def ridge_regression(y, tx, lambda_):
     
     return (w, loss)
 
-
+def build_poly(x, degree):
+    """polynomial basis functions for input data x, for j=0 up to j=degree."""
+    poly = np.ones((len(x), 1))
+    for deg in range(1, degree+1):
+        poly = np.c_[poly, np.power(x, deg)]
+    return poly
 
 #def logistic_regression(y, ty, initial_w, max_iters, gamma):
 #	'''Logistic regression using gradient descent or SGD'''
