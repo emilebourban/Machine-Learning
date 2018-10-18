@@ -104,14 +104,10 @@ def build_k_indices(y, k_fold, seed):
     return np.array(k_indices)
 
 
-from costs import compute_mse
-from ridge_regression import ridge_regression
-from build_polynomial import build_poly
 
 
 def cross_validation(y, x, k_indices, k, lambda_, degree):
     """return the loss of ridge regression."""
-    # ***************************************************
     copy_k_indices = list(k_indices.copy())
     test_indices = copy_k_indices[k]
     test_y = [y[v] for v in test_indices]
@@ -120,21 +116,11 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
     train_indices = [v for t in copy_k_indices for v in t] 
     train_y = [y[v] for v in train_indices]
     train_x = [x[v] for v in train_indices]
-
-    # ***************************************************
-    # ***************************************************
     train_poly = build_poly(train_x,degree)
     test_poly = build_poly(test_x, degree)
-    # ***************************************************
-    # ***************************************************
-    # INSERT YOUR CODE HERE
     weights = ridge_regression(train_y,train_poly,lambda_)
-    # ***************************************************
-    # ***************************************************
     loss_tr = compute_mse(train_y, train_poly, weights)
     loss_te = compute_mse(test_y, test_poly, weights)
-# ***************************************************
-    #raise NotImplementedError
     return loss_tr, loss_te
 
 
@@ -200,7 +186,16 @@ def stochastic_gradient_descent(
     return losses, ws
 
 
-
+def cross_validation_visualization(lambds, mse_tr, mse_te):
+    """visualization the curves of mse_tr and mse_te."""
+    plt.semilogx(lambds, mse_tr, marker=".", color='b', label='train error')
+    plt.semilogx(lambds, mse_te, marker=".", color='r', label='test error')
+    plt.xlabel("lambda")
+    plt.ylabel("rmse")
+    plt.title("cross validation")
+    plt.legend(loc=2)
+    plt.grid(True)
+    plt.savefig("cross_validation")
 
 
 
