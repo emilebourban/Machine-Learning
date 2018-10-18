@@ -12,13 +12,11 @@ def calculate_rmse(mse):
     '''Calculate root mean square error from mean square error''' 
     return np.sqrt(2 * mse)    
 
-def compute_loss(y, tx, w, error='square', rmse=False):
+def compute_loss(y, tx, w, error='square'):
     '''  Computes loss function, type=square/absolute'''
     e = y - (tx @ w)
     if type == 'absolute':
         return calculate_mae(e)
-    elif rmse:
-        return np.sqrt(2 * calculate_mse(e))
     else:
         return calculate_mse(e)
     
@@ -66,10 +64,10 @@ def least_squares(y, tx):
     
 def ridge_regression(y, tx, lambda_):
 	'''Ridge regression using normal equations'''
-    A = tx.T.dot(tx) - lambda_/(2*len(y))*np.identity(len(y))
+    A = tx.T.dot(tx) - lambda_ * 2 * tx.shape[0] * np.identity(tx.shape[1])
     B = tx.T.dot(y) 
     w = np.linalg.solve(A, B)   
-    loss = compute_loss(y, tx, w, rmse=True)
+    loss = compute_loss(y, tx, w)
     
     return (w, loss)
 
