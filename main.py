@@ -67,7 +67,7 @@ for e in range(len(err_lim)):
         k_fold = 5
         _, _, data_tr_off, data_te_off = help1.split_data(yb, data_off, k_fold)
 
-        ws_off = []; losses_off = []; accuracy = 0;
+        ws_off = []; losses_off = [];
         for i in range(k_fold):
                 # Loss values for all the data and cleaned data
                 w, loss = imp.least_squares(y_tr[i], data_tr_off[i])
