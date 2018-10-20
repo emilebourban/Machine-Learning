@@ -20,7 +20,7 @@ def compute_loss(y, tx, w, error='square'):
     else:
         return calculate_mse(e)
     
-
+# TODO
 def least_square_GD(y, tx, initial_w, max_iters, gamma):
     '''Linear regression using gradient descent'''	
     # Define parameters to store w and loss
@@ -62,7 +62,7 @@ def least_squares(y, tx):
     return w, loss
     
 def ridge_regression(y, tx, lambda_):
-	'''Ridge regression using normal equations'''
+    '''Ridge regression using normal equations'''
     A = tx.T.dot(tx) - lambda_ * 2 * tx.shape[0] * np.identity(tx.shape[1])
     B = tx.T.dot(y) 
     w = np.linalg.solve(A, B)   
@@ -130,32 +130,32 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
 
 
 
-from plots import cross_validation_visualization# 
-
-def cross_validation_demo(y,x):
-    seed = 1
-    degree = 7
-    k_fold = 4
-    lambdas = np.logspace(-4, 0, 30)
-    # split data in k fold
-    k_indices = build_k_indices(y, k_fold, seed)
-    # define lists to store the loss of training data and test data
-    rmse_tr = []
-    rmse_te = []
-    # ***************************************************
-    print(lambdas)
-    for l in lambdas :
-        rmse_tr_0 = 0
-        rmse_te_0 = 0
-        for k in range(k_fold):
-            o,p = cross_validation(y, x, k_indices,k,l, degree )
-            rmse_tr_0 += o
-            rmse_te_0 += p 
-        rmse_tr.append(rmse_tr_0/4)
-        rmse_te.append(rmse_te_0/4)
-    # ***************************************************  
-    print(len(x))
-    cross_validation_visualization(lambdas, rmse_tr, rmse_te)
+#from plots import cross_validation_visualization# 
+#
+#def cross_validation_demo(y,x):
+#    seed = 1
+#    degree = 7
+#    k_fold = 4
+#    lambdas = np.logspace(-4, 0, 30)
+#    # split data in k fold
+#    k_indices = build_k_indices(y, k_fold, seed)
+#    # define lists to store the loss of training data and test data
+#    rmse_tr = []
+#    rmse_te = []
+#    # ***************************************************
+#    print(lambdas)
+#    for l in lambdas :
+#        rmse_tr_0 = 0
+#        rmse_te_0 = 0
+#        for k in range(k_fold):
+#            o,p = cross_validation(y, x, k_indices,k,l, degree )
+#            rmse_tr_0 += o
+#            rmse_te_0 += p 
+#        rmse_tr.append(rmse_tr_0/4)
+#        rmse_te.append(rmse_te_0/4)
+#    # ***************************************************  
+#    print(len(x))
+#    cross_validation_visualization(lambdas, rmse_tr, rmse_te)
 
 
 

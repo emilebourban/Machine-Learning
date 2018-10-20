@@ -49,9 +49,9 @@ def create_csv_submission(ids, y_pred, name):
 
 def split_data(y, tx, k_fold):
     ''' Returns the data split into the parts for cross validation '''
-    ind = build_k_indices(tx, k_fold)
+    seed = 10
+    ind = build_k_indices(tx, k_fold, seed)
     y_tr = []; y_te = []; tx_tr = []; tx_te = [];
-    print(ind[1, :])
     for i in range(k_fold):
         y_tr.append(y[ind[i, :]])
         y_te.append(y[np.ravel(np.delete(ind, i, axis=0))])
