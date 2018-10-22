@@ -32,11 +32,12 @@ plt.show()
 
 # Sets error limit [%] and creates data copy with selected column
 err_lim = [100, 75, 65, 35, 10, 1e-6]; 
-accuracy_reg = []; accuracy_off = [];
+degree = [1, 2, 3, 5];
+accuracy_reg = []; accuracy_off = [];  accuracy_poly = np.zeros((len(err_lim), len(degree)));
 data = input_data.copy(); data_pr = input_data_pr.copy()
 
 for e in range(len(err_lim)):
-    
+    print("Computing w/ err limit =", err_lim[e])
     n_del = 0
     # Removes the col with to many error values
     range_ = range(data.shape[1])
@@ -62,7 +63,7 @@ for e in range(len(err_lim)):
     
     # Same as before but with off set in the data
     if offset:
-        data_off = np.c_[np.ones(data.shape[0]), data]    
+        data_off = np.c_[np.ones(data.shape[0]), data] 
         y_tr, y_te, data_tr_off, data_te_off = help1.split_data(yb, data_off, k_fold)
 
         ws_off = []; losses_off = [];
@@ -80,38 +81,56 @@ for e in range(len(err_lim)):
         
     if poly:
     
-#        data = input_data.copy();
-#        y_tr, y_te, data_tr, data_te = help1.split_data(yb, data, k_fold)
-        degree = [1]; ws_poly = []
         for d in range(len(degree)):
-            print("degree:", degree[d])
-            for i in range(k_fold):
-                poly_data_tr = imp.build_poly(data_tr[i], degree[d])
-                poly_data_te = imp.build_poly(data_te[i], degree[d])
-                print(poly_data_tr.shape, poly_data_te.shape)
-                w_poly, loss_poly = imp.least_squares(y_tr[i], poly_data_tr)
-                ws_poly.append(w_poly)            
-                w_poly_mean = np.array(ws_poly).mean(axis=0)   
+            data_poly = imp.build_poly(data, degree[d])
+            y_tr, y_te, data_poly_tr, data_poly_te = help1.split_data(yb, data_poly, k_fold)
             
-                acc_poly = imp.calculate_accuracy(poly_data_te[i], y_te[i], w_poly_mean)
-                print("loss=", loss_poly,"accuracy:", acc_poly)
-
-
+            ws_poly = []; losses_poly = [];
+            for i in range(k_fold):
+                w, loss = imp.least_squares(y_tr[i], data_poly_tr[i])
+                ws_poly.append(w); losses_poly.append(loss)                    
+            
+            w_poly_mean = np.array(ws_poly).mean(axis=0)   
+            accuracy_poly[e, d] = imp.calculate_accuracy(data_poly_te[i], y_te[i], w_poly_mean)         
 
 # PLots the accuracy for both models so that we can find the best error threshold
-fig = plt.figure(2)
-ax = fig.add_subplot(111)
-ax1 = plt.plot(err_lim, accuracy_reg, label='Accuracy w/out offset')
-ax2 = plt.plot(err_lim, accuracy_off, label='Accuracy w/ offset') 
+fig2 = plt.figure(2)
+ax2 = fig2.add_subplot(111)
+plt.plot(err_lim, accuracy_reg, label='Accuracy w/out offset')
+plt.plot(err_lim, accuracy_off, label='Accuracy w/ offset')
 plt.title('Accuracy in function of the error limit on column')
 plt.xlabel('% Error allowed'); plt.ylabel('Accuracy');   
 plt.legend(loc=0)
 for i in range(len(err_lim)):
-    ax.annotate(str(accuracy_reg[i]),xy=(err_lim[i]-5, accuracy_reg[i]-0.002))
-    ax.annotate(str(accuracy_off[i]),xy=(err_lim[i]-5, accuracy_off[i]+0.002))
+    ax2.annotate(str(accuracy_off[i]),xy=(err_lim[i]-5, accuracy_off[i]+0.002))
 plt.show()
 
+fig3 = plt.figure(3)
+ax3 = fig3.add_subplot(111)
+for d in range(len(degree)):
+    plt.plot(err_lim, accuracy_poly[:, d], label='Accuracy w/ poly deg: '+str(degree[d])) 
+plt.title('Accuracy for polynomial reg')
+plt.xlabel('% Error allowed'); plt.ylabel('Accuracy');
+plt.legend(loc=0)
+for i in range(len(err_lim)):
+    ax3.annotate(str(accuracy_poly[i, -1]),xy=(err_lim[i]-5, accuracy_poly[i, -1]+0.002))
+plt.show()
 
-
-
-
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
