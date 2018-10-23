@@ -1,5 +1,18 @@
 import numpy as np
 
+def remove_outliers(data):
+    '''For each column, replaces the values that are further than 3 times the variance 
+    from the mean by the mean.'''
+    means = np.mean(data, axis=0)
+    variances = np.var(data, axis=0)
+    print(means.shape)
+    print(variances.shape)
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            if data[i,j] < (means[j] - 3 * variances[j]) or data[i,j] > (means[j] + 3 * variances[j]):
+                data[i, j] = means[j]
+
+
 def calculate_mse(e):
     '''Calculates the Mean Square Error'''
     return 1/2 * np.mean(e**2)
