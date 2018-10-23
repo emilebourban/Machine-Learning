@@ -5,12 +5,13 @@ def remove_outliers(data):
     from the mean by the mean.'''
     means = np.mean(data, axis=0)
     variances = np.var(data, axis=0)
-    print(means.shape)
-    print(variances.shape)
+    counts = 0
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
             if data[i,j] < (means[j] - 3 * variances[j]) or data[i,j] > (means[j] + 3 * variances[j]):
                 data[i, j] = means[j]
+                counts += 1
+     print('{} outliers removed from data'.format(counts), end='\n\n')
 
 
 def calculate_mse(e):
