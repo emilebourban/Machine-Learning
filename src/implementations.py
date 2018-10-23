@@ -112,12 +112,11 @@ def build_poly(x, degree):
 #    return (w, loss)
 
 
-
-def calculate_accuracy(data_test, yb_test, w):
+def calculate_accuracy(x, y, w):
     '''calculate the accuracy of a prediction w on a test set'''
-    prediction = np.sign(data_test @ w) #gives the prediction of the model: negative values are taken as -1 and positive as +1
-    comparison = (prediction == yb_test)
-    accuracy = sum(comparison) / yb_test.shape[0]
+    prediction = np.sign(x @ w) #gives the prediction of the model: negative values are taken as -1 and positive as +1
+    comparison = (prediction == y)
+    accuracy = sum(comparison) / y.shape[0]
     return accuracy
 
 
