@@ -11,7 +11,7 @@ def remove_outliers(data):
             if data[i,j] < (means[j] - 3 * variances[j]) or data[i,j] > (means[j] + 3 * variances[j]):
                 data[i, j] = means[j]
                 counts += 1
-     print('{} outliers removed from data'.format(counts), end='\n\n')
+    print('{} outliers removed from data'.format(counts), end='\n\n')
 
 
 def calculate_mse(e):
