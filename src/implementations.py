@@ -212,6 +212,34 @@ def stochastic_gradient_descent(
               bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
     return losses, ws
 
+def sigma(z):
+    '''Logistic funtion'''
+    return np.exp(z) / (np.ones(z.shape[0]) + np.exp(z))
+
+def compute_gradient_logreg(y, tx, w):
+    """Compute gradient for logistic regression"""
+    grad = tx.T.dot(sigma(tx @ w) - y)
+    return grad
+
+def logistic_regression(y, tx, initial_w, max_iters, gamma, batch_size=None):
+    '''Logistic regression using gradient descent or SGD'''
+    w = initial_w 
+    if batch_size == None:
+        for i in range(max_iters):
+            # compute loss, gradient
+            grad = compute_gradient_logreg(y, tx, w)
+            # gradient w by descent update
+            w = w - (gamma/(i+1)**(0.5)) * grad
+            # store w and loss
+            loss = compute_loss(y, tx, w)
+    else:
+        for i in range(max_iters):
+            for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
+                grad = compute_gradient_logreg(minibatch_y, minibatch_tx, w)[0]
+                w = w - gamma*grad
+            loss = compute_loss(y, tx, w)
+    
+    return (w, loss)
 
 def cross_validation_visualization(lambds, mse_tr, mse_te):
     """visualization the curves of mse_tr and mse_te."""
