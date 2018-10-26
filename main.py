@@ -30,6 +30,64 @@ plt.xlabel('Columns'); plt.ylabel('% Values');
 plt.legend(loc=1)
 plt.show()
 
+#Logistic regression
+if log_reg:
+    data = input_data.copy()
+         #Removes the col with to many error values
+    n_del = 0
+    range_ = range(data.shape[1])
+    for i in range_:    #size changes, we want every colums
+        if (percent_nan[i] ) >= 70:
+            data = np.delete(data, (i-n_del),  axis=1)
+            data_pr = np.delete(data_pr, (i-n_del),  axis=1)
+            n_del +=1
+    data = np.delete(data, 22,  axis=1)
+    imp.outliers_to_mean(data)
+    #imp.remove_outliers(data)
+    data = imp.standardize(data)
+    gammas = np.logspace(-5, -3, 10)
+    #gammas = np.array([0.00000001, 0.00001])
+    max_iter = 1000
+     
+    accuracy_poly_log_reg = np.zeros((len(degree), gammas.shape[0]))
+    for d in range(len(degree)): 
+        data_poly = imp.build_poly(data, degree[d])
+        y_tr, y_te, data_poly_tr, data_poly_te = help1.split_data(yb, data_poly, k_fold)
+        initial_w = np.ones(data_poly_tr.shape[2])
+        ws_poly_log_reg = np.zeros((k_fold, data_poly_tr.shape[2])); losses_poly_log_reg = [];
+        for g in range(gammas.shape[0]):
+            
+            for k in range(k_fold):
+                w_temp, loss_temp = imp.logistic_regression(y_tr[k], data_poly_tr[k], initial_w, max_iter, gammas[g])
+                ws_poly_log_reg[k] = np.array(w_temp)
+                losses_poly_log_reg.append(loss_temp)
+            w_poly_log_reg_mean = np.array(ws_poly_log_reg.mean(axis=0))
+            accuracy = []
+            for k in range(k_fold):
+                accuracy.append(imp.calculate_accuracy(data_poly_te[k], y_te[k], w_poly_log_reg_mean))
+            accuracy_poly_log_reg[d, g] = np.array(accuracy).mean()
+            print('Accuracy for {} degree poly and gamma = {} is {}'.format(\
+                  degree[d], gammas[g], np.array(accuracy).mean()))
+            
+    temp_ind = np.where(accuracy_poly_log_reg == accuracy_poly_log_reg.max())
+    best_acc_ind = (temp_ind[0][0],temp_ind[1][0])
+    best_acc = accuracy_poly_log_reg[best_acc_ind]
+    best_gamma = gammas[best_acc_ind[1]]
+    best_deg = degree[best_acc_ind[0]]
+    print('the best accuracy is {} with degree {} and gamma {}'.format(\
+            best_acc, best_deg, best_gamma))
+    
+    #generate figure of accuracy depending on gamma values for different polynomial degrees
+    fig6 = plt.figure(6)
+    ax6 = fig6.add_subplot(111)
+    ax6.set_xscale('log')
+    for d in range(len(degree)):
+        plt.plot(gammas, accuracy_poly_log_reg[d, :], label='Accuracy w/ poly deg: '+str(degree[d])) 
+    plt.title('Accuracy for logistic regression')
+    plt.xlabel('gamma'); plt.ylabel('Accuracy');
+    plt.legend(loc=0)
+    plt.show()
+
 #Ridge regression with poly for different lambdas
 if poly_ridge:
     
