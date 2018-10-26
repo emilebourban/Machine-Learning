@@ -30,6 +30,57 @@ plt.xlabel('Columns'); plt.ylabel('% Values');
 plt.legend(loc=1)
 plt.show()
 
+#Ridge regression with poly for different lambdas
+if poly_ridge:
+    
+    # Removes the col with to many error values
+#    n_del = 0
+#    range_ = range(data.shape[1])
+#    for i in range_:    #size changes, we want every colums
+#        if (percent_nan[i] ) >= 70:
+#            data = np.delete(data, (i-n_del),  axis=1)
+#            data_pr = np.delete(data_pr, (i-n_del),  axis=1)
+#            n_del +=1
+    #data = np.delete(data, 22,  axis=1)
+    
+    lambdas = np.logspace(-8, -1, 20)
+    accuracy_poly_ridge = np.zeros((len(degree), lambdas.shape[0]))
+    for d in range(len(degree)):
+        data_poly = imp.build_poly(data, degree[d])
+        y_tr, y_te, data_poly_tr, data_poly_te = help1.split_data(yb, data_poly, k_fold)
+        
+        ws_poly_ridge = np.zeros((k_fold, data_poly_tr.shape[2])); losses_poly_ridge = []; 
+        for l in range(lambdas.shape[0]):
+            for k in range(k_fold):
+                w_temp, loss_temp = imp.ridge_regression(y_tr[k], data_poly_tr[k], lambdas[l])
+                ws_poly_ridge[k] = np.array(w_temp)
+                losses_poly_ridge.append(loss_temp)
+            w_poly_ridge_mean = np.array(ws_poly_ridge.mean(axis=0))
+            accuracy = []
+            for k in range(k_fold):
+                accuracy.append(imp.calculate_accuracy(data_poly_te[k], y_te[k], w_poly_ridge_mean))
+                
+            accuracy_poly_ridge[d ,l] = np.array(accuracy).mean()
+            print('Accuracy for {} degree poly and lambda = {} is {}'.format(\
+                  degree[d], lambdas[l], np.array(accuracy).mean()))
+    temp_ind = np.where(accuracy_poly_ridge == accuracy_poly_ridge.max())
+    best_acc_ind = (temp_ind[0][0],temp_ind[1][0])
+    best_acc = accuracy_poly_ridge[best_acc_ind]
+    best_lambda = lambdas[best_acc_ind[1]]
+    best_deg = degree[best_acc_ind[0]]
+    print('the best accuracy is {} with degree {} and lambda {}'.format(\
+            best_acc, best_deg, best_lambda))
+#figure generation of accuracy depending on lambda values with different polynomial degrees    
+    fig5 = plt.figure(3)
+    ax5 = fig5.add_subplot(111)
+    ax5.set_xscale('log')
+    for d in range(len(degree)):
+        plt.plot(lambdas, accuracy_poly_ridge[d, :], label='Accuracy w/ poly deg: '+str(degree[d])) 
+    plt.title('Accuracy for polynomial reg')
+    plt.xlabel('lambda'); plt.ylabel('Accuracy');
+    plt.legend(loc=0)
+    plt.show()
+
 # Sets error limit [%] and creates data copy with selected column
 err_lim = [100]; 
 degree = [5];
