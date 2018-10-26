@@ -1,19 +1,5 @@
 import numpy as np
 
-def remove_outliers(data):
-    '''For each column, replaces the values that are further than 3 times the variance 
-    from the mean by the mean.'''
-    means = np.mean(data, axis=0)
-    variances = np.var(data, axis=0)
-    counts = 0
-    for i in range(data.shape[0]):
-        for j in range(data.shape[1]):
-            if data[i,j] < (means[j] - 3 * variances[j]) or data[i,j] > (means[j] + 3 * variances[j]):
-                data[i, j] = means[j]
-                counts += 1
-    print('{} outliers removed from data'.format(counts), end='\n\n')
-
-
 def calculate_mse(e):
     '''Calculates the Mean Square Error'''
     return 1/2 * np.mean(e**2)
@@ -165,34 +151,34 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
     return loss_tr, loss_te
 
 
+def remove_outliers(data):
+    '''For each column, replaces the values that are further than 3 times the variance 
+    from the mean by the mean.'''
+    means = np.mean(data, axis=0)
+    variances = np.std(data, axis=0)
+    counts = 0
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            if data[i,j] < (means[j] - 3 * variances[j]) or data[i,j] > (means[j] + 3 * variances[j]):
+                data[i, j] = means[j]
+                counts += 1
+    print('{} outliers removed from data'.format(counts), end='\n\n') 
+    return data
+    
+def outliers_to_zero(data):
+    for i in range(data.shape[1]):
+        col_mean = data[data[:, i] != -999, i].mean(axis=0)
+        data[data[:, i] == -999, i] = np.ones(data[data[:, i] == -999, i].shape[0])*col_mean
+    return data
 
-#from plots import cross_validation_visualization# 
-#
-#def cross_validation_demo(y,x):
-#    seed = 1
-#    degree = 7
-#    k_fold = 4
-#    lambdas = np.logspace(-4, 0, 30)
-#    # split data in k fold
-#    k_indices = build_k_indices(y, k_fold, seed)
-#    # define lists to store the loss of training data and test data
-#    rmse_tr = []
-#    rmse_te = []
-#    # ***************************************************
-#    print(lambdas)
-#    for l in lambdas :
-#        rmse_tr_0 = 0
-#        rmse_te_0 = 0
-#        for k in range(k_fold):
-#            o,p = cross_validation(y, x, k_indices,k,l, degree )
-#            rmse_tr_0 += o
-#            rmse_te_0 += p 
-#        rmse_tr.append(rmse_tr_0/4)
-#        rmse_te.append(rmse_te_0/4)
-#    # ***************************************************  
-#    print(len(x))
-#    cross_validation_visualization(lambdas, rmse_tr, rmse_te)
-
+def standardize(data):
+    st_data = np.zeros((data.shape[0], data.shape[1]))
+    data_mean = data.mean(axis=0)
+    data_std = data.std(axis=0)
+    for i in range(data.shape[1]):
+       st_data[:, i] = (data[:, i] - data_mean[i])/data_std[i]
+        
+    return st_data
 
 
 def compute_stoch_gradient(y, tx, w):

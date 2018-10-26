@@ -31,10 +31,13 @@ plt.legend(loc=1)
 plt.show()
 
 # Sets error limit [%] and creates data copy with selected column
-err_lim = [100, 75, 65, 35, 10, 1e-6]; 
-degree = [1, 2, 3, 5];
-accuracy_reg = []; accuracy_off = [];  accuracy_poly = np.zeros((len(err_lim), len(degree)));
-data = input_data.copy(); data_pr = input_data_pr.copy()
+err_lim = [100]; 
+degree = [5];
+accuracy_reg = []; accuracy_off = [];  
+accuracy_poly = np.zeros((len(err_lim), len(degree)));
+# copies and cleans the data so we don't have to import each time
+data_pr = imp.standardize(input_data_pr.copy())
+data = imp.remove_outliers(imp.standardize(input_data.copy()));
 
 for e in range(len(err_lim)):
     print("Computing w/ err limit =", err_lim[e])
@@ -91,7 +94,12 @@ for e in range(len(err_lim)):
                 ws_poly.append(w); losses_poly.append(loss)                    
             
             w_poly_mean = np.array(ws_poly).mean(axis=0)   
-            accuracy_poly[e, d] = imp.calculate_accuracy(data_poly_te[i], y_te[i], w_poly_mean)         
+            accuracy_poly[e, d] = imp.calculate_accuracy(data_poly_te[i], y_te[i], w_poly_mean)       
+            # Saves the weight for what we knpw are the best parameters
+            if (degree[d] == 5 and err_lim[e] == 100):
+                w_best = w_poly_mean
+                print("{} % accurate".format(accuracy_poly[e, d]*100))
+             
 
 # PLots the accuracy for both models so that we can find the best error threshold
 fig2 = plt.figure(2)
