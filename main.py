@@ -8,26 +8,29 @@ from src import proj1_helpers as help1
 DATA_PATH = './all/'
 # Set to false after first run !
 RELOAD_DATA = True
-OFFSET = True
+OFFSET = False
 POLY = False
 LOG_REGRESS = False
-REG_LOG_REGRESS = True
+REG_LOG_REGRESS = False
 POLY_RIDGE = False
+REG_LIN = False
+RIDGE_CAT = True
 
 #%%
 # Only reload once, takes a lot of time
 if RELOAD_DATA:
+    print("Importing...")
     Y_IN, INPUT_DATA, IDS = help1.load_csv_data(DATA_PATH+r'train.csv')
     Y_IN_PR, INPUT_DATA_PR, IDS_PR = help1.load_csv_data(DATA_PATH+r'test.csv')
 #%%
     
-DEGREE = [4]; K_FOLD = 5;
-data = imp.normalize(imp.remove_outliers(
-                            imp.outliers_to_mean(INPUT_DATA.copy())))
-data_pr = imp.standardize(INPUT_DATA_PR.copy())
+
 #Logistic regression
 if LOG_REGRESS:
-    
+    DEGREE = [4]; K_FOLD = 5;
+    data = imp.normalize(imp.remove_outliers(
+                            imp.outliers_to_mean(INPUT_DATA.copy())))
+    data_pr = imp.standardize(INPUT_DATA_PR.copy())
 
     gammas = np.logspace(-11, 0, 20)
     max_iter = 100
@@ -129,15 +132,14 @@ if REG_LOG_REGRESS:
     
 #Ridge regression with poly for different lambdas
 if POLY_RIDGE:
-    
+
     data = imp.standardize(imp.remove_outliers(imp.outliers_to_mean(INPUT_DATA.copy())))
-    data_pr = imp.standardize(INPUT_DATA_PR.copy())
+    PRED = False
+    if PRED:
+        data_pr = imp.standardize(imp.remove_outliers(imp.outliers_to_mean(INPUT_DATA_PR.copy())))
     
-    DEGREE = [ 6, 10, 11, 12]; K_FOLD = 5; BEST = False
-    if BEST:
-        lambdas = np.array([2.6320240607048775e-06])
-    else:
-        lambdas = np.logspace(-10, -3, 15)
+    DEGREE = [9]; K_FOLD = 5;
+    lambdas = np.logspace(np.log10(1e-9), np.log10(1e-5), 30)
     
     accuracy_poly_ridge = np.zeros((len(DEGREE), lambdas.shape[0]))
     for d in range(len(DEGREE)):
@@ -156,14 +158,25 @@ if POLY_RIDGE:
                 accuracy.append(imp.calculate_accuracy(data_poly_te[k], y_te[k], w_poly_ridge_mean))
                 
             accuracy_poly_ridge[d ,l] = np.array(accuracy).mean()
-            print('Accuracy = {:.4}; Degree = {}; Lambda = {:.4E}'.format(\
-                  np.array(accuracy).mean(),DEGREE[d], lambdas[l]))
+            print(str((d)*lambdas.shape[0] + (l+1))+'/'+str(lambdas.shape[0] * len(DEGREE)), \
+                  'Accuracy for {} degree poly and lambda = {:.5E} is {:.6}'.format(
+                  DEGREE[d], lambdas[l], np.array(accuracy).mean()*100))
+            
     temp_ind = np.where(accuracy_poly_ridge == accuracy_poly_ridge.max())
     best_acc_ind = (temp_ind[0][0],temp_ind[1][0])
     best_acc = accuracy_poly_ridge[best_acc_ind]
     best_lambda = lambdas[best_acc_ind[1]]
     best_deg = DEGREE[best_acc_ind[0]]
-    print('the best accuracy is {} with degree {} and lambda {}'.format(\
+    
+    ws_best = []
+    data_poly = imp.build_poly(data, best_deg)
+    y_tr, y_te, data_poly_tr, data_poly_te = help1.split_data(Y_IN, data_poly, K_FOLD)
+    for k in range(K_FOLD):        
+        w_temp, _ = imp.ridge_regression(y_tr[k], data_poly_tr[k], best_lambda)
+        ws_best.append(w_temp)
+    w_poly_ridge_best = np.array(ws_best).mean(axis=0)
+            
+    print('The best accuracy is {:.5} with degree {:.5E} and lambda {:.6}'.format(
             best_acc, best_deg, best_lambda))
     
     # Figure generation of accuracy depending on lambda values with different polynomial degrees    
@@ -176,47 +189,110 @@ if POLY_RIDGE:
     plt.xlabel('lambda'); plt.ylabel('Accuracy');
     plt.legend(loc=0)
     plt.show()
-
-
+    
 #%%
     
-accuracy_reg = []; accuracy_off = [];  
-
-# copies and cleans the data so we don't have to import each time
-data_pr = imp.standardize(INPUT_DATA_PR.copy())
-data = imp.remove_outliers(
-        imp.standardize(imp.outliers_to_mean(INPUT_DATA.copy())));
-
-    #Splits the data into k_fold 
-K_FOLD = 5
-y_tr, y_te, data_tr, data_te = help1.split_data(Y_IN, data, K_FOLD)
-
-ws = []; losses = [];
-for i in range(k_fold):
-        # Loss values for all the data and cleaned data
-        w, loss = imp.least_squares(y_tr[i], data_tr[i])
-        ws.append(w); losses.append(loss) 
+if RIDGE_CAT:
+#    data = imp.standardize(imp.remove_outliers(imp.outliers_to_mean(INPUT_DATA.copy())))
+    data_cat, y_cat, data_cat_pr, y_cat_pr, ids_cat_pr = imp.split_by_category(INPUT_DATA.copy(), Y_IN.copy(), INPUT_DATA_PR.copy(), Y_IN_PR.copy(), IDS_PR.copy())
         
-# Takes the mean w as the best approximation (test w/ median)
-w_ls = np.array(ws).mean(axis=0)
-accuracy_reg.append(imp.calculate_accuracy(data_te[0], y_te[0], w_ls))
+    DEGREE = [9]; K_FOLD = 5;
+    lambdas = np.logspace(np.log10(1e-6), np.log10(1e-1), 100)
+    
+    ws_best_cat = []; accuracy_cat = np.zeros((len(y_cat), len(DEGREE), lambdas.shape[0]))
+    for c in range(len(y_cat)):
+        print("Computing w for case: "+str(c))
+        data_cat[c] = imp.standardize(imp.remove_outliers(imp.outliers_to_mean(data_cat[c])))       
+        data_cat_pr[c] = imp.standardize(imp.remove_outliers(imp.outliers_to_mean(data_cat_pr[c])))
+        for d in range(len(DEGREE)):
+            data_poly = imp.build_poly(data_cat[c], DEGREE[d])
+            y_tr, y_te, data_poly_tr, data_poly_te = help1.split_data(y_cat[c], data_poly, K_FOLD)
+            
+            for l in range(lambdas.shape[0]):
+                ws_poly_ridge = np.zeros((K_FOLD, data_poly_tr.shape[2]));
+                for k in range(K_FOLD):
+                    w_temp, _ = imp.ridge_regression(y_tr[k], data_poly_tr[k], lambdas[l])
+                    ws_poly_ridge[k] = np.array(w_temp)
+                w_poly_ridge_mean = np.array(ws_poly_ridge).mean(axis=0)
+                
+                accuracy = []
+                for k in range(K_FOLD):
+                    accuracy.append(imp.calculate_accuracy(data_poly_te[k], y_te[k], w_poly_ridge_mean))                    
+                accuracy_cat[c, d , l] = np.array(accuracy).mean()
+            
+#                print(str((d)*lambdas.shape[0] + (l+1))+'/'+str(lambdas.shape[0] * len(DEGREE)), \
+#                      'Accuracy for {} degree poly and lambda = {:.5E} is {:.6}'.format(
+#                      DEGREE[d], lambdas[l], np.array(accuracy).mean()*100))
+    w_cat_ridge_best = []; ind = []        
+    for c in range(len(y_cat)):
+        idmax = np.matrix(accuracy_cat[c]).argmax()
+        ind.append((int(idmax / accuracy_cat[0].shape[1]), int(idmax / accuracy_cat[0].shape[0])))
+        w_temp, _ = imp.ridge_regression(y_cat[c], imp.build_poly(data_cat[c], DEGREE[-1]), lambdas[ind[c][1]])
+        w_cat_ridge_best.append(w_temp)
+          
+    fig5 = plt.figure(3)
+    ax5 = fig5.add_subplot(111)
+    ax5.set_xscale('log')
+    for c in range(len(y_cat)):
+        for d in range(len(DEGREE)):
+            plt.plot(lambdas, accuracy_cat[c, d, :], label='Accuracy w/ poly deg: '+str(DEGREE[d])+', cat: '+str(c)) 
+    plt.title('Accuracy for polynomial reg')
+    plt.xlabel('lambda'); plt.ylabel('Accuracy');
+    plt.legend(loc=0)
+    plt.show()
+    
+    
+    # Does the prediction
+    y_pred_cat = []
+    for c in range(4):
+        if c == 0:
+            y_pred = np.array(help1.predict_labels(w_cat_ridge_best[c], imp.build_poly(data_cat_pr[c], DEGREE[-1])))
+            ids_pr = np.array(ids_cat_pr[c])
+        else:            
+            y_pred = np.r_[y_pred, help1.predict_labels(w_cat_ridge_best[c], imp.build_poly(data_cat_pr[c], DEGREE[-1]))]
+            ids_pr = np.r_[ids_pr, ids_cat_pr[c]]
+    
+    help1.create_csv_submission(ids_pr, y_pred, "ridge_deg9_catsep.csv")        
 
-# Same as before but with off set in the data
-if OFFSET:
-    data_off = np.c_[np.ones(data.shape[0]), data] 
-    y_tr, y_te, data_tr_off, data_te_off = help1.split_data(Y_IN, data_off, k_fold)
-
-    ws_off = []; losses_off = [];
+#%%
+if REG_LIN:  
+    accuracy_reg = []; accuracy_off = [];  
+    
+    # copies and cleans the data so we don't have to import each time
+    data_pr = imp.standardize(INPUT_DATA_PR.copy())
+    data = imp.remove_outliers(
+            imp.standardize(imp.outliers_to_mean(INPUT_DATA.copy())));
+    
+        #Splits the data into k_fold 
+    K_FOLD = 5
+    y_tr, y_te, data_tr, data_te = help1.split_data(Y_IN, data, K_FOLD)
+    
+    ws = []; losses = [];
     for i in range(k_fold):
             # Loss values for all the data and cleaned data
-            w, loss = imp.least_squares(y_tr[i], data_tr_off[i])
-            ws_off.append(w); losses_off.append(loss)
+            w, loss = imp.least_squares(y_tr[i], data_tr[i])
+            ws.append(w); losses.append(loss) 
+            
+    # Takes the mean w as the best approximation (test w/ median)
+    w_ls = np.array(ws).mean(axis=0)
+    accuracy_reg.append(imp.calculate_accuracy(data_te[0], y_te[0], w_ls))
+    
+    # Same as before but with off set in the data
+    if OFFSET:
+        data_off = np.c_[np.ones(data.shape[0]), data] 
+        y_tr, y_te, data_tr_off, data_te_off = help1.split_data(Y_IN, data_off, k_fold)
+    
+        ws_off = []; losses_off = [];
+        for i in range(k_fold):
+                # Loss values for all the data and cleaned data
+                w, loss = imp.least_squares(y_tr[i], data_tr_off[i])
+                ws_off.append(w); losses_off.append(loss)
+        w_ls_off = np.array(ws_off).mean(axis=0)
+        accuracy_off.append(imp.calculate_accuracy(data_te_off[0], y_te[0], w_ls_off))
 
 #%%
 
 # Finds the accuracy        
-w_ls_off = np.array(ws_off).mean(axis=0)
-accuracy_off.append(imp.calculate_accuracy(data_te_off[0], y_te[0], w_ls_off))
         
 if POLY:
 
@@ -235,27 +311,27 @@ if POLY:
          
 
 # PLots the accuracy for both models so that we can find the best error threshold
-fig2 = plt.figure(2)
-ax2 = fig2.add_subplot(111)
-plt.plot(err_lim, accuracy_reg, label='Accuracy w/out offset')
-plt.plot(err_lim, accuracy_off, label='Accuracy w/ offset')
-plt.title('Accuracy in function of the error limit on column')
-plt.xlabel('% Error allowed'); plt.ylabel('Accuracy');   
-plt.legend(loc=0)
-for i in range(len(err_lim)):
-    ax2.annotate(str(accuracy_off[i]),xy=(err_lim[i]-5, accuracy_off[i]+0.002))
-plt.show()
-
-fig3 = plt.figure(3)
-ax3 = fig3.add_subplot(111)
-for d in range(len(degree)):
-    plt.plot(err_lim, accuracy_poly[:, d], label='Accuracy w/ poly deg: '+str(degree[d])) 
-plt.title('Accuracy for polynomial reg')
-plt.xlabel('% Error allowed'); plt.ylabel('Accuracy');
-plt.legend(loc=0)
-for i in range(len(err_lim)):
-    ax3.annotate(str(accuracy_poly[i, -1]),xy=(err_lim[i]-5, accuracy_poly[i, -1]+0.002))
-plt.show()
+    fig2 = plt.figure(2)
+    ax2 = fig2.add_subplot(111)
+    plt.plot(err_lim, accuracy_reg, label='Accuracy w/out offset')
+    plt.plot(err_lim, accuracy_off, label='Accuracy w/ offset')
+    plt.title('Accuracy in function of the error limit on column')
+    plt.xlabel('% Error allowed'); plt.ylabel('Accuracy');   
+    plt.legend(loc=0)
+    for i in range(len(err_lim)):
+        ax2.annotate(str(accuracy_off[i]),xy=(err_lim[i]-5, accuracy_off[i]+0.002))
+    plt.show()
+    
+    fig3 = plt.figure(3)
+    ax3 = fig3.add_subplot(111)
+    for d in range(len(degree)):
+        plt.plot(err_lim, accuracy_poly[:, d], label='Accuracy w/ poly deg: '+str(degree[d])) 
+    plt.title('Accuracy for polynomial reg')
+    plt.xlabel('% Error allowed'); plt.ylabel('Accuracy');
+    plt.legend(loc=0)
+    for i in range(len(err_lim)):
+        ax3.annotate(str(accuracy_poly[i, -1]),xy=(err_lim[i]-5, accuracy_poly[i, -1]+0.002))
+    plt.show()
 
     
     

@@ -278,6 +278,30 @@ def cross_validation_visualization(lambds, mse_tr, mse_te):
     plt.legend(loc=2)
     plt.grid(True)
     plt.savefig("cross_validation")
+    
+    
+def split_by_category(data, y, data_pr, y_pr, ids_pr):
+    '''Splits the data according to the values in col 22 '''
+    data_cat = []; y_cat = [];
+    data_cat_pr = []; y_cat_pr = [];
+    ids_cat_pr = [];
+    for i in range(4):
+        data_cat.append(np.delete(data[data[:, 22] == i, :], 22, axis=1))
+        data_cat_pr.append(np.delete(data_pr[data_pr[:, 22] == i, :], 22, axis=1))
+        y_cat.append(y[data[:, 22] == i])
+        y_cat_pr.append(y_pr[data_pr[:, 22] == i])
+        ids_cat_pr.append(ids_pr[data_pr[:, 22] == i])
+    # removes col where values are NaN
+    for c in range(4):
+        n_del = 0
+        for i in range(data.shape[1]-1):
+            if np.all(data_cat[c][:, (i-n_del)] == -999) or np.all(data_cat[c][:, (i-n_del)] == 0):
+                data_cat[c] = np.delete(data_cat[c], (i-n_del), axis=1)
+                data_cat_pr[c] = np.delete(data_cat_pr[c], (i-n_del), axis=1)
+                n_del += 1
+            
+    return (data_cat, y_cat, data_cat_pr, y_cat_pr, ids_cat_pr)
+
 
 
 def princomp(A):
