@@ -4,13 +4,16 @@ def calculate_mse(e):
     '''Calculates the Mean Square Error'''
     return 1/2 * np.mean(e**2)
 
+
 def calculate_mae(e):
     ''' Calculates the Mean Absolute Error '''
     return np.mean(np.abs(e))
 
+
 def calculate_rmse(mse):
     '''Calculate root mean square error from mean square error''' 
-    return np.sqrt(2 * mse)    
+    return np.sqrt(2 * mse)  
+  
 
 def compute_loss(y, tx, w, error='square'):
     '''  Computes loss function, type=square/absolute'''
@@ -19,6 +22,7 @@ def compute_loss(y, tx, w, error='square'):
         return calculate_mae(e)
     else:
         return calculate_mse(e)
+    
     
 def least_square_GD(y, tx, initial_w, max_iters, gamma):
     '''Linear regression using gradient descent'''	
@@ -32,6 +36,7 @@ def least_square_GD(y, tx, initial_w, max_iters, gamma):
         w = w - gamma * grad
         # store w and loss
     return w, loss
+
 
 def compute_gradient(y, tx, w):
     """Compute the gradient."""
@@ -86,7 +91,7 @@ def least_squares(y, tx):
     
 def ridge_regression(y, tx, lambda_):
     '''Ridge regression using normal equations'''
-    A = tx.T.dot(tx) - (2*tx.shape[0]*lambda_)*np.identity(tx.shape[1])
+    A = tx.T.dot(tx) + (2*tx.shape[0]*lambda_)*np.identity(tx.shape[1])
     B = tx.T.dot(y) 
     w = np.linalg.solve(A, B)   
     loss = compute_loss(y, tx, w)
@@ -106,9 +111,7 @@ def build_poly(x, degree):
 #    
 #def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
 #	'''Regularized logistic regression using gradient descent
-#	or SGD'''
-#	
-#	
+#	or SGD'''#	
 #    return (w, loss)
 
 
@@ -129,8 +132,6 @@ def build_k_indices(y, k_fold, seed):
     k_indices = [indices[k * interval: (k + 1) * interval]
                  for k in range(k_fold)]
     return np.array(k_indices)
-
-
 
 
 def cross_validation(y, x, k_indices, k, lambda_, degree):
@@ -165,7 +166,7 @@ def remove_outliers(data):
     print('{} outliers removed from data'.format(counts), end='\n\n') 
     return data
     
-def outliers_to_zero(data):
+def outliers_to_mean(data):
     for i in range(data.shape[1]):
         col_mean = data[data[:, i] != -999, i].mean(axis=0)
         data[data[:, i] == -999, i] = np.ones(data[data[:, i] == -999, i].shape[0])*col_mean
@@ -179,6 +180,10 @@ def standardize(data):
        st_data[:, i] = (data[:, i] - data_mean[i])/data_std[i]
         
     return st_data
+
+def normalize(data):
+    for i in range(data.shape[1]):
+        data[:, i] = data[:, i] / data[:, i].max()
 
 
 def compute_stoch_gradient(y, tx, w):
@@ -239,6 +244,27 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma, batch_size=None):
                 w = w - gamma*grad
             loss = compute_loss(y, tx, w)
     
+    return (w, loss)
+
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, batch_size=None):
+    '''Regularized logistic regression using gradient descent
+    or SGD'''
+    w = initial_w
+    if batch_size == None:
+       for i in range(max_iters):
+           # compute loss, gradient
+            grad = compute_gradient_logreg(y, tx, w)
+            # gradient w by descent update
+            w = w * (1 - lambda_ * gamma) - gamma * grad
+            # store w and loss
+            loss = compute_loss(y, tx, w)
+    else:
+        for i in range(max_iters):
+            for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
+                grad = compute_gradient_logreg(minibatch_y, minibatch_tx, w)[0]
+                w = w * (1 - lambda_ * gamma) - gamma * grad
+            loss = compute_loss(y, tx, w)
+    	
     return (w, loss)
 
 def cross_validation_visualization(lambds, mse_tr, mse_te):
