@@ -147,8 +147,8 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
     train_poly = build_poly(train_x,degree)
     test_poly = build_poly(test_x, degree)
     weights = ridge_regression(train_y,train_poly,lambda_)
-    loss_tr = compute_mse(train_y, train_poly, weights)
-    loss_te = compute_mse(test_y, test_poly, weights)
+    loss_tr = calculate_mse(train_y, train_poly, weights)
+    loss_te = calculate_mse(test_y, test_poly, weights)
     return loss_tr, loss_te
 
 
@@ -183,8 +183,8 @@ def standardize(data):
 
 def normalize(data):
     for i in range(data.shape[1]):
-        data[:, i] = data[:, i] / data[:, i].max()
-
+        data[:, i] = data[:, i] / np.absolute(data[:, i]).max()
+    return data
 
 def compute_stoch_gradient(y, tx, w):
     """Compute a stochastic gradient for batch data."""
@@ -220,11 +220,14 @@ def stochastic_gradient_descent(
 def sigma(z):
     '''Logistic funtion'''
     return np.exp(z) / (np.ones(z.shape[0]) + np.exp(z))
-
-def compute_gradient_logreg(y, tx, w):
+#NEW***************************************************************************
+def compute_gradient_logreg(y, tx, w, lambda_= None):
     """Compute gradient for logistic regression"""
-    grad = tx.T.dot(sigma(tx @ w) - y)
-    return grad
+    w[0] = 0
+    if lambda_:
+        return (1/tx.shape[0]) * tx.T.dot(sigma(tx @ w) - y) + lambda_/tx.shape[0]
+        
+    return (1/tx.shape[0]) * tx.T.dot(sigma(tx @ w) - y)
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma, batch_size=None):
     '''Logistic regression using gradient descent or SGD'''
@@ -251,12 +254,10 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, batch_s
     or SGD'''
     w = initial_w
     if batch_size == None:
-       for i in range(max_iters):
-           # compute loss, gradient
-            grad = compute_gradient_logreg(y, tx, w)
-            # gradient w by descent update
-            w = w * (1 - lambda_ * gamma) - gamma * grad
-            # store w and loss
+        for i in range(max_iters):
+            # compute loss, gradient
+            grad = compute_gradient_logreg(y, tx, w, lambda_)
+            w = w - gamma * grad
             loss = compute_loss(y, tx, w)
     else:
         for i in range(max_iters):
@@ -266,7 +267,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, batch_s
             loss = compute_loss(y, tx, w)
     	
     return (w, loss)
-
+#******************************************************************************
 def cross_validation_visualization(lambds, mse_tr, mse_te):
     """visualization the curves of mse_tr and mse_te."""
     plt.semilogx(lambds, mse_tr, marker=".", color='b', label='train error')

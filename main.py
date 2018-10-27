@@ -9,9 +9,10 @@ DATA_PATH = './all/'
 # Set to false after first run !
 RELOAD_DATA = True
 OFFSET = True
-POLY = True
-LOG_REGRESS = True
-POLY_RIDGE = True
+POLY = False
+LOG_REGRESS = False
+REG_LOG_REGRESS = True
+POLY_RIDGE = False
 
 #%%
 # Only reload once, takes a lot of time
@@ -20,16 +21,15 @@ if RELOAD_DATA:
     Y_IN_PR, INPUT_DATA_PR, IDS_PR = help1.load_csv_data(DATA_PATH+r'test.csv')
 #%%
     
-DEGREE = [3]; K_FOLD = 5;
-data = imp.standardize(imp.remove_outliers(
+DEGREE = [4]; K_FOLD = 5;
+data = imp.normalize(imp.remove_outliers(
                             imp.outliers_to_mean(INPUT_DATA.copy())))
 data_pr = imp.standardize(INPUT_DATA_PR.copy())
 #Logistic regression
-if log_regress:
+if LOG_REGRESS:
     
 
-    gammas = np.logspace(-11, -3.5, 20)
-    lambda_ = 10
+    gammas = np.logspace(-11, 0, 20)
     max_iter = 100
      
     accuracy_poly_log_reg = np.zeros((len(DEGREE), gammas.shape[0]))
@@ -42,7 +42,7 @@ if log_regress:
             
             for k in range(K_FOLD):
                 w_temp, loss_temp = imp.logistic_regression(y_tr[k], data_poly_tr[k], initial_w, max_iter, gammas[g])
-                w_temp, loss_temp = imp.reg_logistic_regression(y_tr[k], data_poly_tr[k], lambda_, initial_w, max_iter, gammas[g])
+                w_temp, loss_temp = imp.logistic_regression(y_tr[k], data_poly_tr[k], initial_w, max_iter, gammas[g])
                 ws_poly_log_reg[k] = np.array(w_temp)
                 losses_poly_log_reg.append(loss_temp)
             w_poly_log_reg_mean = np.array(ws_poly_log_reg.mean(axis=0))
@@ -52,7 +52,8 @@ if log_regress:
             accuracy_poly_log_reg[d, g] = np.array(accuracy).mean()
             print('Accuracy for {} degree poly and gamma = {} is {}'.format(\
                   DEGREE[d], gammas[g], np.array(accuracy).mean()))
-            
+                
+    
     temp_ind = np.where(accuracy_poly_log_reg == accuracy_poly_log_reg.max())
     best_acc_ind = (temp_ind[0][0],temp_ind[1][0])
     best_acc = accuracy_poly_log_reg[best_acc_ind]
@@ -72,7 +73,58 @@ if log_regress:
     plt.legend(loc=0)
     plt.show()
         
+#%%
+if REG_LOG_REGRESS:
     
+
+    gammas = np.logspace(-3, 2, 10)
+    lambdas = np.logspace(-10, 1, 4)
+    max_iter = 100
+    
+    #creates a 3d array that stores the accuracy for each degree, gamma and lambda
+    accuracy_poly_log_reg = np.zeros((len(DEGREE), gammas.shape[0], lambdas.shape[0]))
+    
+    for d in range(len(DEGREE)): 
+        data_poly = imp.build_poly(data, DEGREE[d])
+        y_tr, y_te, data_poly_tr, data_poly_te = help1.split_data(Y_IN, data_poly, K_FOLD)
+        initial_w = np.ones(data_poly_tr.shape[2])
+        ws_poly_log_reg = np.zeros((K_FOLD, data_poly_tr.shape[2])); losses_poly_log_reg = [];
+        for g in range(gammas.shape[0]):
+            for l in range(lambdas.shape[0]):
+                for k in range(K_FOLD):
+                    w_temp, loss_temp = imp.logistic_regression(y_tr[k], data_poly_tr[k], initial_w, max_iter, gammas[g])
+                    w_temp, loss_temp = imp.reg_logistic_regression(y_tr[k], data_poly_tr[k], lambdas[l], initial_w, max_iter, gammas[g])
+                    ws_poly_log_reg[k] = np.array(w_temp)
+                    losses_poly_log_reg.append(loss_temp)
+                w_poly_log_reg_mean = np.array(ws_poly_log_reg.mean(axis=0))
+                accuracy = []
+                for k in range(K_FOLD):
+                    accuracy.append(imp.calculate_accuracy(data_poly_te[k], y_te[k], w_poly_log_reg_mean))
+                accuracy_poly_log_reg[d, g, l] = np.array(accuracy).mean()
+                print('Accuracy = {:.4}; Degree = {}; Lambda = {:.3E}; Gamma = {:.3E}; Lambda*Gamma = {:.3} '.format(
+                      np.array(accuracy).mean(), DEGREE[d], lambdas[l], gammas[g], lambdas[l]*gammas[g]))
+            
+    
+    temp_ind = np.where(accuracy_poly_log_reg == accuracy_poly_log_reg.max())
+    best_acc_ind = (temp_ind[0][0],temp_ind[1][0], temp_ind[2][0])
+    best_acc = accuracy_poly_log_reg[best_acc_ind]
+    best_gamma = gammas[best_acc_ind[1]]
+    best_lambda = lambdas[best_acc_ind[2]]
+    best_deg = DEGREE[best_acc_ind[0]]
+    best_w, _ = imp.reg_logistic_regression(y_tr[k], data_poly_tr[k], lambdas[l], initial_w, max_iter, gammas[g])
+    print('Best accuracy = {}; Degree = {}; Gamma = {}; Lambda {}'.format(\
+            best_acc, best_deg, best_gamma, best_lambda))
+    
+    #generate figure of accuracy depending on gamma values for different polynomial degrees
+    fig7 = plt.figure(7)
+    ax7 = fig7.add_subplot(111)
+    ax7.set_xscale('log')
+    for g in range(len(gammas)):
+        plt.plot(lambdas, accuracy_poly_log_reg[3,g,:], label='Accuracy w/ gamma: '+str(gammas[g])) 
+    plt.title('Accuracy for logistic regression')
+    plt.xlabel('gamma'); plt.ylabel('Accuracy');
+    plt.legend(loc=0)
+    plt.show()
 #%%
     
 #Ridge regression with poly for different lambdas
@@ -81,11 +133,11 @@ if POLY_RIDGE:
     data = imp.standardize(imp.remove_outliers(imp.outliers_to_mean(INPUT_DATA.copy())))
     data_pr = imp.standardize(INPUT_DATA_PR.copy())
     
-    DEGREE = [6]; K_FOLD = 5; BEST = True
+    DEGREE = [ 6, 10, 11, 12]; K_FOLD = 5; BEST = False
     if BEST:
         lambdas = np.array([2.6320240607048775e-06])
     else:
-        lambdas = np.logspace(np.log10(1e-8), np.log10(1e-4), 70)
+        lambdas = np.logspace(-10, -3, 15)
     
     accuracy_poly_ridge = np.zeros((len(DEGREE), lambdas.shape[0]))
     for d in range(len(DEGREE)):
@@ -104,8 +156,8 @@ if POLY_RIDGE:
                 accuracy.append(imp.calculate_accuracy(data_poly_te[k], y_te[k], w_poly_ridge_mean))
                 
             accuracy_poly_ridge[d ,l] = np.array(accuracy).mean()
-            print('Accuracy for {} degree poly and lambda = {} is {}'.format(\
-                  DEGREE[d], lambdas[l], np.array(accuracy).mean()))
+            print('Accuracy = {:.4}; Degree = {}; Lambda = {:.4E}'.format(\
+                  np.array(accuracy).mean(),DEGREE[d], lambdas[l]))
     temp_ind = np.where(accuracy_poly_ridge == accuracy_poly_ridge.max())
     best_acc_ind = (temp_ind[0][0],temp_ind[1][0])
     best_acc = accuracy_poly_ridge[best_acc_ind]
