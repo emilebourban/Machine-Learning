@@ -16,7 +16,7 @@ degree = [1, 2, 4, 5, 6]; degree_illfit = [1, 3, 6, 7, 8, 9];
 
 
 # Only reload once, takes a lot of time
-if reload_data:<
+if reload_data:
     yb, input_data, ids = help1.load_csv_data(data_path+r'train.csv')
     yb_pr, input_data_pr, ids_pr = help1.load_csv_data(data_path+r'test.csv')
 
