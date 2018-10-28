@@ -16,12 +16,19 @@ def calculate_rmse(mse):
   
 
 def compute_loss(y, tx, w, error='square'):
-    '''  Computes loss function, type=square/absolute'''
+    '''Computes loss function, type=square/absolute'''
     e = y - (tx @ w)
     if type == 'absolute':
         return calculate_mae(e)
     else:
         return calculate_mse(e)
+    
+    
+def compute_gradient(y, tx, w):
+    """Computes the gradient."""
+    err = y - tx.dot(w)
+    grad = -tx.T.dot(err) / len(err)
+    return grad, err
     
     
 def least_square_GD(y, tx, initial_w, max_iters, gamma):
@@ -36,13 +43,6 @@ def least_square_GD(y, tx, initial_w, max_iters, gamma):
         w = w - gamma * grad
         # store w and loss
     return w, loss
-
-
-def compute_gradient(y, tx, w):
-    """Compute the gradient."""
-    err = y - tx.dot(w)
-    grad = -tx.T.dot(err) / len(err)
-    return grad, err
 
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
@@ -80,44 +80,38 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batch_size):
             w = w - gamma*grad
         loss = compute_loss(y, tx, w)
     return (w, loss) 
+
         
 def least_squares(y, tx):
-    """calculate the least squares solution."""
+    """Calculate the weioghts with the least squares method"""
     a = tx.T.dot(tx)
     b = tx.T.dot(y)
     w = np.linalg.solve(a, b)
     loss = compute_loss(y, tx, w)
     return w, loss
+
     
 def ridge_regression(y, tx, lambda_):
     '''Ridge regression using normal equations'''
     A = tx.T.dot(tx) + (2*tx.shape[0]*lambda_)*np.identity(tx.shape[1])
     B = tx.T.dot(y) 
     w = np.linalg.solve(A, B)   
-    loss = compute_loss(y, tx, w)
-    
+    loss = compute_loss(y, tx, w)    
     return (w, loss)
 
+
 def build_poly(x, degree):
-    """polynomial basis functions for input data x, for j=0 up to j=degree."""
+    """polynomial basis functions for input data x, for j=1 up to j=degree."""
+    # Adds off set parameter to the data
     poly = np.ones((x.shape[0], 1))
     for deg in range(1, degree+1):
         poly = np.c_[poly, np.power(x, deg)]
     return poly
 
-#def logistic_regression(y, ty, initial_w, max_iters, gamma):
-#	'''Logistic regression using gradient descent or SGD'''
-#    return (w, loss)
-#    
-#def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-#	'''Regularized logistic regression using gradient descent
-#	or SGD'''#	
-#    return (w, loss)
 
-
-def calculate_accuracy(x, y, w):
+def calculate_accuracy(tx, y, w):
     '''calculate the accuracy of a prediction w on a test set'''
-    prediction = np.sign(x @ w) #gives the prediction of the model: negative values are taken as -1 and positive as +1
+    prediction = np.sign(tx @ w) #gives the prediction of the model: negative values are taken as -1 and positive as +1
     comparison = (prediction == y)
     accuracy = sum(comparison) / y.shape[0]
     return accuracy
@@ -129,27 +123,26 @@ def build_k_indices(y, k_fold, seed):
     interval = int(num_row / k_fold)
     np.random.seed(seed)
     indices = np.random.permutation(num_row)
-    k_indices = [indices[k * interval: (k + 1) * interval]
-                 for k in range(k_fold)]
+    k_indices = [indices[k * interval: (k + 1) * interval] for k in range(k_fold)]
     return np.array(k_indices)
 
-
-def cross_validation(y, x, k_indices, k, lambda_, degree):
-    """return the loss of ridge regression."""
-    copy_k_indices = list(k_indices.copy())
-    test_indices = copy_k_indices[k]
-    test_y = [y[v] for v in test_indices]
-    test_x = [x[v] for v in test_indices]
-    del copy_k_indices[k]
-    train_indices = [v for t in copy_k_indices for v in t] 
-    train_y = [y[v] for v in train_indices]
-    train_x = [x[v] for v in train_indices]
-    train_poly = build_poly(train_x,degree)
-    test_poly = build_poly(test_x, degree)
-    weights = ridge_regression(train_y,train_poly,lambda_)
-    loss_tr = calculate_mse(train_y, train_poly, weights)
-    loss_te = calculate_mse(test_y, test_poly, weights)
-    return loss_tr, loss_te
+#TODO Delete ?
+#def cross_validation(y, x, k_indices, k, lambda_, degree):
+#    """return the loss of ridge regression."""
+#    copy_k_indices = list(k_indices.copy())
+#    test_indices = copy_k_indices[k]
+#    test_y = [y[v] for v in test_indices]
+#    test_x = [x[v] for v in test_indices]
+#    del copy_k_indices[k]
+#    train_indices = [v for t in copy_k_indices for v in t] 
+#    train_y = [y[v] for v in train_indices]
+#    train_x = [x[v] for v in train_indices]
+#    train_poly = build_poly(train_x,degree)
+#    test_poly = build_poly(test_x, degree)
+#    weights = ridge_regression(train_y,train_poly,lambda_)
+#    loss_tr = calculate_mse(train_y, train_poly, weights)
+#    loss_te = calculate_mse(test_y, test_poly, weights)
+#    return loss_tr, loss_te
 
 
 def remove_outliers(data):
@@ -167,12 +160,14 @@ def remove_outliers(data):
     return data
     
 def outliers_to_mean(data):
+    '''Removes the wrong values in a column by the mean of the col without the errors'''
     for i in range(data.shape[1]):
         col_mean = data[data[:, i] != -999, i].mean(axis=0)
         data[data[:, i] == -999, i] = np.ones(data[data[:, i] == -999, i].shape[0])*col_mean
     return data
 
 def standardize(data):
+    '''Standardize the data to distribution centred at 0 with variance 1'''
     st_data = np.zeros((data.shape[0], data.shape[1]))
     data_mean = data.mean(axis=0)
     data_std = data.std(axis=0)
@@ -182,6 +177,7 @@ def standardize(data):
     return st_data
 
 def normalize(data):
+    '''Normalisation, dividion by the largest values output [0, 1]'''
     for i in range(data.shape[1]):
         data[:, i] = data[:, i] / np.absolute(data[:, i]).max()
     return data
@@ -192,7 +188,7 @@ def compute_stoch_gradient(y, tx, w):
     grad = -tx.T.dot(err) / len(err)
     return grad, err
 
-
+#TODO Choose one SGD
 def stochastic_gradient_descent(
         y, tx, initial_w, batch_size, max_iters, gamma):
     """Stochastic gradient descent."""
@@ -220,7 +216,8 @@ def stochastic_gradient_descent(
 def sigma(z):
     '''Logistic funtion'''
     return np.exp(z) / (np.ones(z.shape[0]) + np.exp(z))
-#NEW***************************************************************************
+
+
 def compute_gradient_logreg(y, tx, w, lambda_= None):
     """Compute gradient for logistic regression"""
     w[0] = 0
@@ -267,7 +264,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, batch_s
             loss = compute_loss(y, tx, w)
     	
     return (w, loss)
-#******************************************************************************
+
+
 def cross_validation_visualization(lambds, mse_tr, mse_te):
     """visualization the curves of mse_tr and mse_te."""
     plt.semilogx(lambds, mse_tr, marker=".", color='b', label='train error')
@@ -291,19 +289,43 @@ def split_by_category(data, y, data_pr, y_pr, ids_pr):
         y_cat.append(y[data[:, 22] == i])
         y_cat_pr.append(y_pr[data_pr[:, 22] == i])
         ids_cat_pr.append(ids_pr[data_pr[:, 22] == i])
-    # removes col where values are NaN
+    # removes col where values are wrong
     for c in range(4):
         n_del = 0
         for i in range(data.shape[1]-1):
             if np.all(data_cat[c][:, (i-n_del)] == -999) or np.all(data_cat[c][:, (i-n_del)] == 0):
                 data_cat[c] = np.delete(data_cat[c], (i-n_del), axis=1)
                 data_cat_pr[c] = np.delete(data_cat_pr[c], (i-n_del), axis=1)
-                n_del += 1
-            
+                n_del += 1            
     return (data_cat, y_cat, data_cat_pr, y_cat_pr, ids_cat_pr)
 
 
+def split_data(y, tx, k_fold):
+    ''' Returns the data split into the parts for cross validation '''
+    seed = 10
+    ind = build_k_indices(tx, k_fold, seed)
+    y_tr = []; y_te = []; tx_tr = []; tx_te = [];
+    for i in range(k_fold):
+        y_tr.append(y[ind[i, :]])
+        y_te.append(y[np.ravel(np.delete(ind, i, axis=0))])
+        tx_tr.append(tx[ind[i, :]])
+        tx_te.append(tx[np.ravel(np.delete(ind, i, axis=0))]) 
+        
+    return np.array(y_tr), np.array(y_te), np.array(tx_tr), np.array(tx_te)
 
+
+def build_k_indices(y, k_fold, seed=1):
+    """build k indices for k-fold."""
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval]
+                 for k in range(k_fold)]
+    return np.array(k_indices)
+
+
+#TODO Delte?
 def princomp(A):
  """ performs principal components analysis 
      (PCA) on the n-by-p data matrix A
