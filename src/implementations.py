@@ -217,57 +217,61 @@ def stochastic_gradient_descent(
               bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
     return losses, ws
 
-def sigma(z):
-    '''Logistic funtion'''
-    return np.exp(z) / (np.ones(z.shape[0]) + np.exp(z))
-#NEW***************************************************************************
-def compute_gradient_logreg(y, tx, w, lambda_= None):
-    """Compute gradient for logistic regression"""
-    w[0] = 0
-    if lambda_:
-        return (1/tx.shape[0]) * tx.T.dot(sigma(tx @ w) - y) + lambda_/tx.shape[0]
-        
-    return (1/tx.shape[0]) * tx.T.dot(sigma(tx @ w) - y)
 
-def logistic_regression(y, tx, initial_w, max_iters, gamma, batch_size=None):
-    '''Logistic regression using gradient descent or SGD'''
-    w = initial_w 
-    if batch_size == None:
-        for i in range(max_iters):
-            # compute loss, gradient
-            grad = compute_gradient_logreg(y, tx, w)
-            # gradient w by descent update
-            w = w - (gamma/(i+1)**(0.5)) * grad
-            # store w and loss
-            loss = compute_loss(y, tx, w)
-    else:
-        for i in range(max_iters):
-            for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
-                grad = compute_gradient_logreg(minibatch_y, minibatch_tx, w)[0]
-                w = w - gamma*grad
-            loss = compute_loss(y, tx, w)
+def sigmoid(t):
+    """apply sigmoid function on t."""
+    return 1 / (1 + np.exp(-t))
+#TODO need to undestand why it's always NAN and correct it
+def calculate_loss(y, tx, w):
+    """compute the cost by negative log likelihood."""
+    loss = y.T.dot(np.log(sigmoid(tx@w))) + (1-y).T.dot(np.log(1-sigmoid(tx.dot(w))))
+    return loss
+
+def calculate_gradient(y, tx, w):
+    """compute the gradient of loss."""
+    grad = tx.T.dot(sigmoid(tx@w) -  y)
+    return grad
+
+def learning_by_gradient_descent(y, tx, w, gamma):
+    """
+    Do one step of gradient descen using logistic regression.
+    Return the loss and the updated w.
+    """
+    # compute the cost
+    loss = calculate_loss(y, tx, w)
+    # compute the gradient
+    grad = calculate_gradient(y, tx, w)
+    w = w -  gamma * grad
+    return loss, w
+
+
+def logistic_regression(y, tx, w):
+    """return the loss, gradient, and hessian."""
+    loss = calculate_loss(y, tx, w)
+    grad = calculate_gradient(y, tx, w)
+
+    return loss, grad
+
+def penalized_logistic_regression(y, tx, w, lambda_):
+    """return the loss, gradient, and hessian."""
     
-    return (w, loss)
+    loss1, grad1 = logistic_regression(y, tx, w)
+    loss = loss1 + lambda_* np.linalg.norm(w)**2
+    grad = grad1 + lambda_ * 2 * w
+    return loss, grad
 
-def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, batch_size=None):
-    '''Regularized logistic regression using gradient descent
-    or SGD'''
-    w = initial_w
-    if batch_size == None:
-        for i in range(max_iters):
-            # compute loss, gradient
-            grad = compute_gradient_logreg(y, tx, w, lambda_)
-            w = w - gamma * grad
-            loss = compute_loss(y, tx, w)
-    else:
-        for i in range(max_iters):
-            for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
-                grad = compute_gradient_logreg(minibatch_y, minibatch_tx, w)[0]
-                w = w * (1 - lambda_ * gamma) - gamma * grad
-            loss = compute_loss(y, tx, w)
-    	
-    return (w, loss)
-#******************************************************************************
+def learning_by_penalized_gradient(y, tx, w, gamma, lambda_):
+    """
+    Do one step of gradient descent, using the penalized logistic regression.
+    Return the loss and updated w.
+    """
+
+    loss, grad = penalized_logistic_regression(y, tx, w, lambda_)
+    # update w
+    w = w - gamma * grad
+    return loss, w
+
+
 def cross_validation_visualization(lambds, mse_tr, mse_te):
     """visualization the curves of mse_tr and mse_te."""
     plt.semilogx(lambds, mse_tr, marker=".", color='b', label='train error')
