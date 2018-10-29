@@ -264,8 +264,8 @@ if LOG_REGRESS:
     data = imp.normalize(imp.remove_outliers(
                             imp.outliers_to_mean(INPUT_DATA.copy())))
 
-    gammas = np.logspace(-11, 0, 10)
-    max_iter = 50
+    gammas = np.logspace(-5, 0, 2)
+    max_iter = 10
      
     accuracy_grid_logreg = np.zeros((len(DEGREE), gammas.shape[0]))
     for d in range(len(DEGREE)): 
@@ -275,7 +275,7 @@ if LOG_REGRESS:
         ws_poly_log_reg = np.zeros((K_FOLD, data_poly_tr.shape[2])); losses_poly_log_reg = [];
         for g in range(gammas.shape[0]):    
             accuracy_grid_logreg[d,g], _ = imp.cross_validation(
-                        imp.reg_logistic_regression, y_tr, data_poly_tr, y_te, 
+                        imp.logistic_regression, y_tr, data_poly_tr, y_te, 
                         data_poly_te, gamma=gammas[g], 
                         initial_w = np.zeros(data_poly_tr.shape[2]))
     
@@ -302,11 +302,11 @@ if LOG_REGRESS:
     
 if REG_LOG_REGRESS:    
 
-    gammas = np.logspace(-3, -1, 4)
-    lambdas = np.logspace(-10, 1, 6)
-    max_iter = 50
+    gammas = np.logspace(-12, 0, 3)
+    lambdas = np.logspace(-10, 0, 3)
+    max_iter = 25
     DEGREE = [1]; K_FOLD = 5;
-    data = imp.normalize(imp.remove_outliers(
+    data = imp.standardize(imp.remove_outliers(
                             imp.outliers_to_mean(INPUT_DATA.copy())))
     #creates a 3d array that stores the accuracy for each degree, gamma and lambda
     accuracy_grid_reglogreg = np.zeros((len(DEGREE), gammas.shape[0], lambdas.shape[0]))
@@ -314,13 +314,12 @@ if REG_LOG_REGRESS:
     for d in range(len(DEGREE)): 
         data_poly = imp.build_poly(data, DEGREE[d])
         y_tr, y_te, data_poly_tr, data_poly_te = imp.split_data(Y_IN, data_poly, K_FOLD)
-        initial_w = np.ones(data_poly_tr.shape[2])
         ws_poly_log_reg = np.zeros((K_FOLD, data_poly_tr.shape[2])); losses_poly_log_reg = [];
         for g in range(gammas.shape[0]):
             for l in range(lambdas.shape[0]):
                 accuracy_grid_reglogreg[d, g, l], _ = imp.cross_validation(imp.reg_logistic_regression, 
-                    y_tr, data_poly_tr, y_te, data_poly_te, gamma=gammas[g], 
-                    lambda_=lambdas[l], initial_w = np.zeros(data_poly_tr.shape[2]))
+                    imp.sigma(y_tr), data_poly_tr, imp.sigma(y_te), data_poly_te, gamma=gammas[g], 
+                    lambda_=lambdas[l], initial_w = np.random.rand(data_poly_tr.shape[2]))
                 
     temp_ind = np.where(accuracy_grid_reglogreg == accuracy_grid_reglogreg.max())
     best_acc_ind = (temp_ind[0][0],temp_ind[1][0], temp_ind[2][0])
@@ -343,26 +342,3 @@ if REG_LOG_REGRESS:
     plt.xlabel('lambda'); plt.ylabel('Accuracy');
     plt.legend(loc=0)
     plt.show()
-    
-
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
