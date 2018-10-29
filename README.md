@@ -48,3 +48,5 @@ main.py
 		
 For each hyperparameter, degree, lambdas, gamma, ... we used larger denser lin/logspaces in order to have a more precise fit. For
 reasons of speed, we use a lower amount of point for the submission but the user can change this as he pleases.
+
+Note: Our 3rd teamate (Timothée Kastylevsky) who did not participate actively to the project was supposed to make up for it and do a significant part this week-end. However, he did not do any work, notified us only sunday evening, and then told us on monday that he would probably drop out of EPFL. As a result, we did not have time to fully implement the logistic regressions. Thank you for taking note of this when grading our work (as discussed via e-mail with Pr. Jaggi)
