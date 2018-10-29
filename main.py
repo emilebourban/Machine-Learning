@@ -318,7 +318,7 @@ if REG_LOG_REGRESS:
         for g in range(gammas.shape[0]):
             for l in range(lambdas.shape[0]):
                 accuracy_grid_reglogreg[d, g, l], _ = imp.cross_validation(imp.reg_logistic_regression, 
-                    imp.sigma(y_tr), data_poly_tr, imp.sigma(y_te), data_poly_te, gamma=gammas[g], 
+                    y_tr, data_poly_tr, y_te, data_poly_te, gamma=gammas[g], 
                     lambda_=lambdas[l], initial_w = np.random.rand(data_poly_tr.shape[2]))
                 
     temp_ind = np.where(accuracy_grid_reglogreg == accuracy_grid_reglogreg.max())
