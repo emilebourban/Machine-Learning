@@ -195,15 +195,18 @@ def stochastic_gradient_descent(
               bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
     return losses, ws
 
+
 def sigma(z):
     '''Logistic funtion'''
-    return np.exp(z) / (np.ones(z.shape[0]) + np.exp(z))
+    return 1 / (1 + np.exp(-z))
 
+def compute_loss_logreg(y, tx, w):
+    return -y.T.dot(np.log(sigma(tx @ w))) + (1-y).T@np.log(1-sigma(tx@w))
 
 def compute_gradient_logreg(y, tx, w, lambda_= None):
     """Compute gradient for logistic regression"""
-    if lambda_:
-        return (1/tx.shape[0]) * tx.T.dot(sigma(tx @ w) - y) + lambda_/tx.shape[0]
+    if lambda_ != None:
+        return (1/tx.shape[0]) * tx.T.dot(sigma(tx @ w) - y) + lambda_/tx.shape[0] * w
         
     return (1/tx.shape[0]) * tx.T.dot(sigma(tx @ w) - y)
 
@@ -215,9 +218,9 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma, batch_size=None):
             # compute loss, gradient
             grad = compute_gradient_logreg(y, tx, w)
             # gradient w by descent update
-            w = w - (gamma/(i+1)**(0.5)) * grad
+            w = w - gamma * grad
             # store w and loss
-            loss = compute_loss(y, tx, w)
+            loss = compute_loss_logreg(y, tx, w)
     else:
         for i in range(max_iters):
             for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
@@ -241,8 +244,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, batch_s
         for i in range(max_iters):
             for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
                 grad = compute_gradient_logreg(minibatch_y, minibatch_tx, w)[0]
-                w = w * (1 - lambda_ * gamma) - gamma * grad
-            loss = compute_loss(y, tx, w)
+                w = w - gamma * grad
+                loss = compute_loss_logreg(y, tx, w)
     	
     return (w, loss)
 
