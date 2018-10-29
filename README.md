@@ -15,34 +15,34 @@ main.py
 	with a 20/80 split. The boolean parameters at the begining allows the user to only execute certain parts of the program since it takes a long time.
 	In cases where it applies, the DEGREE list can be used to run the code on any chosen degree.
 	
-	GADIENT DESCENT: ( set to True)
+	GADIENT DESCENT: (GRADIENT_DESCENT set to True)
 		Predicts the weights on the data using the iterative gradient descent method, takes a long time
 	
-	STOCHASTIC GRADIENT DESCENT:
+	STOCHASTIC GRADIENT DESCENT: (STOCHASTIC_GRADIENT_DESCENT set to True)
 		Same principle as above exept the gradient is computed on minibatchs of the data to decrease complexity.
 	
-	LINEAR REGRESSION:
+	LINEAR REGRESSION: (REG_LIN set to True)
 		Simple linear regression on the unmodified data predicts the proportionality between the features and the outputs. The fitting
 		and minimizing of the cost function is now done with the least squares method.
 	
-	LINEAR REGRESSION W/ OFFSET:
+	LINEAR REGRESSION W/ OFFSET: (OFFSET set to True)
 		Same as before with an offset parameter to increase accuracy.
 	
-	POLYNOMIAL REGRESSION:
+	POLYNOMIAL REGRESSION: (POLY set to True)
 		Now we create a data_poly matrix that has added polynomial coefficients of the original data to fit with a polynomial weights
 		since the prediction probably depends on the more than a degree 1 proportionality.
 	
-	POLYNOMIAL RIDGE REGRESSION:
+	POLYNOMIAL RIDGE REGRESSION: (POLY_RIDGE set to True)
 		Uses the polynomial data for the prediction, now, the ridge reg regularizes the data in function of the L2 norm of the weights		
 	
-	POLYNOMIAL RIDGE REGRESSION W/ CATEGORY SEPARATION:	
+	POLYNOMIAL RIDGE REGRESSION W/ CATEGORY SEPARATION: (RIDGE_CAT set to True)	
 		Data is split according to its type, then cleaned of any useless column. 4 different weights are then trained on the model so that our 
 		prediction is improved
 	
-	LOGARITHMIC REGRESSION:
+	LOGARITHMIC REGRESSION: (LOG_REGRESS set to True)
 		Uses logarithmic regression to predict the data, only works on degree 1
 	
-	REGULARISED LOGARITHMIC REGRESSION:
+	REGULARISED LOGARITHMIC REGRESSION: (REG_LOG_REGRESS set to True)
 		Uses regularised logarithmic regression to predict the data, only works on degree 1
 
 		
