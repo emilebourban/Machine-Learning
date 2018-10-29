@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from src import implementations as imp
@@ -7,16 +6,17 @@ from src import proj1_helpers as help1
 
 DATA_PATH = './all/'
 # Set to false after first run !
-RELOAD_DATA = True
+RELOAD_DATA = False
 # Set to true to run specific method demo
 GRADIENT_DESCENT = False
+STOCHASTIC_GRADIENT_DESCENT = False
 REG_LIN = False
 OFFSET = False 
 POLY = False
 POLY_RIDGE = False
 RIDGE_CAT = False
 LOG_REGRESS = True
-REG_LOG_REGRESS = True
+REG_LOG_REGRESS = False
 
 #%%
 
@@ -53,7 +53,33 @@ if GRADIENT_DESCENT:
     best_deg = DEGREE[best_acc_ind[0]]
     print('the best accuracy is {} with degree {} and gamma {}'.format(
                                                 best_acc, best_deg, best_gamma))
- 
+
+#%%  
+if STOCHASTIC_GRADIENT_DESCENT:
+    print('Stochastic Gradient descent:')
+    #defining parameters. 
+    DEGREE = [1, 2, 3]; K_FOLD = 5; gammas = np.logspace(-5, 0, 10); 
+    max_iters = 150; batch_size = 10
+    #data standardization and removing of missing value / outliers
+    data = imp.standardize(imp.remove_outliers(
+                            imp.outliers_to_mean(INPUT_DATA.copy())))
+    data_pr = imp.standardize(INPUT_DATA_PR.copy())
+
+    accuracy_grid_GD = np.zeros((len(DEGREE), gammas.shape[0]))
+    for d in range(len(DEGREE)):
+        data_poly = imp.build_poly(data, DEGREE[d])
+        y_tr, y_te, data_poly_tr, data_poly_te = imp.split_data(Y_IN, data_poly, K_FOLD)
+        initial_w = np.ones(data_poly_tr.shape[2])
+        for g in range(gammas.shape[0]):
+            accuracy_grid_GD[d, g], _ = imp.cross_validation(imp.least_squares_SGD, y_tr, data_poly_tr, y_te, data_poly_te, k_fold=K_FOLD, initial_w=initial_w, max_iters=max_iters, gamma=gammas[g], batch_size=batch_size)
+            
+    temp_ind = np.where(accuracy_grid_GD == accuracy_grid_GD.max())
+    best_acc_ind = (temp_ind[0][0],temp_ind[1][0])
+    best_acc = accuracy_grid_GD[best_acc_ind]
+    best_gamma = gammas[best_acc_ind[1]]
+    best_deg = DEGREE[best_acc_ind[0]]
+    print('the best accuracy is {} with degree {} and gamma {}'.format(
+                                                best_acc, best_deg, best_gamma))
 #%%
     
 
@@ -155,7 +181,7 @@ if POLY_RIDGE:
     best_lambda = lambdas[best_acc_ind[1]]
 
     ws_best = []
-    data_poly = imp.build_poly(data, best_deg)
+    data_poly = imp.build_poly(data, DEGREE[best_acc_ind[0]])
     y_tr, y_te, data_poly_tr, data_poly_te = imp.split_data(Y_IN, data_poly, K_FOLD)
     _, w_poly_ridge_best = imp.cross_validation(imp.ridge_regression, 
                                                 y_tr, data_poly_tr, y_te, data_poly_te, 
@@ -237,7 +263,6 @@ if LOG_REGRESS:
     DEGREE = [1]; K_FOLD = 5;
     data = imp.normalize(imp.remove_outliers(
                             imp.outliers_to_mean(INPUT_DATA.copy())))
-    data_pr = imp.standardize(INPUT_DATA_PR.copy())
 
     gammas = np.logspace(-11, 0, 10)
     max_iter = 50
@@ -250,9 +275,9 @@ if LOG_REGRESS:
         ws_poly_log_reg = np.zeros((K_FOLD, data_poly_tr.shape[2])); losses_poly_log_reg = [];
         for g in range(gammas.shape[0]):    
             accuracy_grid_logreg[d,g], _ = imp.cross_validation(
-                    imp.reg_logistic_regression, y_tr, data_poly_tr, y_te, 
-                    data_poly_te, gamma=gammas[g], 
-                    initial_w = np.zeros(data_poly_tr.shape[2]).mean())
+                        imp.reg_logistic_regression, y_tr, data_poly_tr, y_te, 
+                        data_poly_te, gamma=gammas[g], 
+                        initial_w = np.zeros(data_poly_tr.shape[2]))
     
     temp_ind = np.where(accuracy_grid_logreg == accuracy_grid_logreg.max())
     best_acc_ind = (temp_ind[0][0],temp_ind[1][0])
@@ -267,7 +292,7 @@ if LOG_REGRESS:
     ax6 = fig6.add_subplot(111)
     ax6.set_xscale('log')
     for d in range(len(DEGREE)):
-        plt.plot(gammas, accuracy_poly_log_reg[d, :], label='Accuracy w/ poly deg: '+str(DEGREE[d])) 
+        plt.plot(gammas, accuracy_grid_logreg[d, :], label='Accuracy w/ poly deg: '+str(DEGREE[d])) 
     plt.title('Accuracy for logistic regression')
     plt.xlabel('gamma'); plt.ylabel('Accuracy');
     plt.legend(loc=0)
@@ -277,10 +302,12 @@ if LOG_REGRESS:
     
 if REG_LOG_REGRESS:    
 
-    gammas = np.logspace(-3, 2, 10)
-    lambdas = np.logspace(-10, 1, 4)
+    gammas = np.logspace(-3, -1, 4)
+    lambdas = np.logspace(-10, 1, 6)
     max_iter = 50
-    
+    DEGREE = [1]; K_FOLD = 5;
+    data = imp.normalize(imp.remove_outliers(
+                            imp.outliers_to_mean(INPUT_DATA.copy())))
     #creates a 3d array that stores the accuracy for each degree, gamma and lambda
     accuracy_grid_reglogreg = np.zeros((len(DEGREE), gammas.shape[0], lambdas.shape[0]))
     
@@ -291,10 +318,10 @@ if REG_LOG_REGRESS:
         ws_poly_log_reg = np.zeros((K_FOLD, data_poly_tr.shape[2])); losses_poly_log_reg = [];
         for g in range(gammas.shape[0]):
             for l in range(lambdas.shape[0]):
-                accuracy_grid_reglogreg, _ = imp.cross_validation(imp.reg_logistic_regression, y_tr, data_poly_tr, y_te, 
-                    data_poly_te, gamma=gammas[g], lambda_=lambdas[l],
-                    initial_w = np.zeros(data_poly_tr.shape[2])).mean()
-    
+                accuracy_grid_reglogreg[d, g, l], _ = imp.cross_validation(imp.reg_logistic_regression, 
+                    y_tr, data_poly_tr, y_te, data_poly_te, gamma=gammas[g], 
+                    lambda_=lambdas[l], initial_w = np.zeros(data_poly_tr.shape[2]))
+                
     temp_ind = np.where(accuracy_grid_reglogreg == accuracy_grid_reglogreg.max())
     best_acc_ind = (temp_ind[0][0],temp_ind[1][0], temp_ind[2][0])
     best_acc = accuracy_grid_reglogreg[best_acc_ind]
@@ -302,7 +329,7 @@ if REG_LOG_REGRESS:
     best_lambda = lambdas[best_acc_ind[2]]
     best_deg = DEGREE[best_acc_ind[0]]
     
-    best_w, _ = imp.reg_logistic_regression(y_tr[k], data_poly_tr[k], lambdas[l], initial_w, max_iter, gammas[g])
+   #best_w, _ = imp.reg_logistic_regression(y_tr, data_poly_tr[k], lambdas[l], initial_w, max_iter, gammas[g])
     print('Best accuracy = {}; Degree = {}; Gamma = {}; Lambda {}'.format(\
             best_acc, best_deg, best_gamma, best_lambda))
     
@@ -311,9 +338,9 @@ if REG_LOG_REGRESS:
     ax7 = fig7.add_subplot(111)
     ax7.set_xscale('log')
     for g in range(len(gammas)):
-        plt.plot(lambdas, accuracy_grid_reglogreg[3,g,:], label='Accuracy w/ gamma: '+str(gammas[g])) 
+        plt.plot(lambdas, accuracy_grid_reglogreg[best_acc_ind[0],g,:], label='Accuracy w/ gamma: '+str(gammas[g])) 
     plt.title('Accuracy for logistic regression')
-    plt.xlabel('gamma'); plt.ylabel('Accuracy');
+    plt.xlabel('lambda'); plt.ylabel('Accuracy');
     plt.legend(loc=0)
     plt.show()
     
