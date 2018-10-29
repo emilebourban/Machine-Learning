@@ -46,5 +46,5 @@ main.py
 		Uses regularised logarithmic regression to predict the data, only works on degree 1
 
 		
-		For each hyperparameter, degree, lambdas, gamma, ... we used larger denser lin/logspaces in order to have a more precise fit. For
+For each hyperparameter, degree, lambdas, gamma, ... we used larger denser lin/logspaces in order to have a more precise fit. For
 reasons of speed, we use a lower amount of point for the submission but the user can change this as he pleases.
