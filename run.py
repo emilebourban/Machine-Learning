@@ -38,19 +38,17 @@ for c in range(len(y_cat)):
         # Iteration on the lambda logspace
         for l in range(lambdas.shape[0]):
             # calculates accuracy with cross validation
-            accuracy_cat[c,d,l] = imp.cross_validation(imp.ridge_regression, 
-                               y_tr, data_poly_tr, y_te, data_poly_te, lambda_=lambdas[l])
-
-            
+            accuracy_cat[c,d,l], _ = imp.cross_validation(imp.ridge_regression, 
+                               y_tr, data_poly_tr, y_te, data_poly_te, lambda_=lambdas[l])            
             step += 1
-            print('Step: '+str(step)+'/'
-                           +str(lambdas.shape[0] * len(DEGREE) * len(y_cat)) )
+        print('Step: '+str(step)+'/'
+                       +str(lambdas.shape[0] * len(DEGREE) * len(y_cat)) )
         
     # Captures the index of the parameters for the best accuracy
     idmax = np.matrix(accuracy_cat[c]).argmax()
     ind.append((int(idmax / accuracy_cat[0].shape[1]), int(idmax / accuracy_cat[0].shape[0])))
     # Computes the w for each category with the best parameters and stores it
-    w_temp, _ = imp.ridge_regression(y_cat[c], imp.build_poly(data_cat[c], DEGREE[-1]), lambdas[ind[c][1]])
+    w_temp, _ = imp.ridge_regression(y_cat[c], imp.build_poly(data_cat[c], DEGREE[ind[c][0]]), lambdas[ind[c][1]])
     w_cat_ridge_best.append(w_temp)
     
     # Computation of the prediction keeping the y_pred and the ids in the same order

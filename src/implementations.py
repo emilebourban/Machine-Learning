@@ -202,7 +202,6 @@ def sigma(z):
 
 def compute_gradient_logreg(y, tx, w, lambda_= None):
     """Compute gradient for logistic regression"""
-    w[0] = 0
     if lambda_:
         return (1/tx.shape[0]) * tx.T.dot(sigma(tx @ w) - y) + lambda_/tx.shape[0]
         
@@ -311,5 +310,5 @@ def cross_validation(method, y_tr, data_tr, y_te, data_te, k_fold=5, lambda_=Non
     for k in range(k_fold):
         accuracy.append(calculate_accuracy(data_te[k], y_te[k], w_mean))
         
-    return np.array(accuracy).mean()
+    return np.array(accuracy).mean(), w_mean
 
