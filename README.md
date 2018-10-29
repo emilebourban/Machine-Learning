@@ -14,7 +14,7 @@ main.py
 	In cases where it applies, the DEGREE list can be used to run the code on any chosen degree.
 	GADIENT DESCENT: ( set to True)
 		Predicts the weights on the data using the iterative gradient descent method, takes a long time
-	STOCHASTIC GRADIENT DESCENT:
+	\nSTOCHASTIC GRADIENT DESCENT:
 		Same principle as above exept the gradient is computed on minibatchs of the data to decrease complexity.
 	LINEAR REGRESSION:
 		Simple linear regression on the unmodified data predicts the proportionality between the features and the outputs. The fitting
