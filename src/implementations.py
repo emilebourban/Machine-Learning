@@ -170,7 +170,6 @@ def compute_stoch_gradient(y, tx, w):
     grad = -tx.T.dot(err) / len(err)
     return grad, err
 
-#TODO Choose one SGD
 def stochastic_gradient_descent(
         y, tx, initial_w, batch_size, max_iters, gamma):
     """Stochastic gradient descent."""
